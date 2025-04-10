@@ -34,9 +34,40 @@ async def on_ready():
     print(f'ID del Bot: {bot.user.id}')
     print('------')
     
-    # Sync slash commands with Discord
-    await tree.sync()
-    print("¡Comandos slash sincronizados!")
+    # Sync slash commands with Discord - Global sync first
+    try:
+        print("Intentando sincronización global de comandos...")
+        synced = await tree.sync()
+        print(f"¡Comandos slash sincronizados globalmente! Cantidad: {len(synced)}")
+        print(f"Comandos registrados: {', '.join([cmd.name for cmd in synced])}")
+    except Exception as e:
+        print(f"Error en sincronización global: {e}")
+    
+    # Then sync per guild for faster updates
+    print("Sincronizando comandos por servidor...")
+    for guild in bot.guilds:
+        try:
+            guild_commands = await tree.sync(guild=guild)
+            print(f"✓ Comandos sincronizados para {guild.name} (ID: {guild.id}). Cantidad: {len(guild_commands)}")
+            if guild_commands:
+                print(f"  Comandos: {', '.join([cmd.name for cmd in guild_commands])}")
+        except Exception as e:
+            print(f"✗ Error sincronizando comandos para {guild.name}: {e}")
+    
+    # Add a test command to verify slash commands are working
+    @tree.command(name='test', description='Comprobar si los comandos slash funcionan')
+    async def test_command(interaction: discord.Interaction):
+        """Comando simple para verificar que los comandos slash funcionan."""
+        await interaction.response.send_message("✅ Los comandos slash están funcionando correctamente.")
+    
+    # Try to sync again with the test command
+    try:
+        print("Sincronizando de nuevo con comando de prueba...")
+        for guild in bot.guilds:
+            await tree.sync(guild=guild)
+        print("Sincronización con comando de prueba completada.")
+    except Exception as e:
+        print(f"Error en segunda sincronización: {e}")
     
     # Print bot permissions information
     for guild in bot.guilds:
@@ -62,6 +93,11 @@ async def on_ready():
         bot_member = guild.get_member(bot.user.id)
         permissions = bot_member.guild_permissions
         print(f'El bot tiene permiso "Gestionar Mensajes": {permissions.manage_messages}')
+        
+        # Check applications.commands scope
+        bot_user = await guild.fetch_member(bot.user.id)
+        if bot_user:
+            print(f'Permisos integración de aplicaciones en {guild.name}: {bot_user.guild_permissions.use_application_commands}')
 
 @bot.event
 async def on_message(message):
