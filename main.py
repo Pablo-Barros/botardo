@@ -1,6 +1,7 @@
 import os
 import re
 import discord
+from discord import app_commands
 from discord.ext import commands
 from keep_alive import keep_alive  # To keep the bot active
 
@@ -8,8 +9,9 @@ from keep_alive import keep_alive  # To keep the bot active
 intents = discord.Intents.default()
 intents.message_content = True  # Required to read message content
 
-# Initialize the bot
-bot = commands.Bot(command_prefix='!', intents=intents)
+# Initialize the bot with a command tree for slash commands
+bot = commands.Bot(command_prefix='!', intents=intents)  # Prefix is still needed for error handling but won't be used for commands
+tree = bot.tree  # Command tree for slash commands
 
 # Regular expression to detect "connect" followed by an IP address
 IP_PATTERN = re.compile(r'connect\s+(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', re.IGNORECASE)
@@ -20,6 +22,10 @@ async def on_ready():
     print(f'Bot connected as {bot.user.name}')
     print(f'Bot ID: {bot.user.id}')
     print('------')
+    
+    # Sync slash commands with Discord
+    await tree.sync()
+    print("Slash commands synced!")
     
     # Print bot permissions information
     for guild in bot.guilds:
@@ -60,40 +66,40 @@ async def on_message(message):
         except Exception as e:
             print(f"ERROR deleting message: {e}")
     
-    # Process commands in the message (if any)
-    await bot.process_commands(message)
+    # We no longer need to process commands here, as slash commands are handled differently
 
-@bot.command(name='ping')
-async def ping(ctx):
+@tree.command(name='ping', description='Check if the bot is working')
+async def ping(interaction: discord.Interaction):
     """Simple command to verify that the bot is working."""
-    await ctx.send('Pong! Bot working correctly.')
+    await interaction.response.send_message('Pong! Bot working correctly.')
 
-@bot.command(name='info')
-async def info(ctx):
+@tree.command(name='info', description='Learn about the purpose of this bot')
+async def info(interaction: discord.Interaction):
     """Command to show information about the purpose of the bot."""
-    await ctx.send("I'm a bot designed to delete messages containing connection instructions with IP addresses, to maintain server security.")
+    await interaction.response.send_message("I'm a bot designed to delete messages containing connection instructions with IP addresses, to maintain server security.")
 
-# Add a permission check command
-@bot.command(name='checkperms')
-async def check_permissions(ctx):
+@tree.command(name='checkperms', description='Check if the bot has necessary permissions')
+async def check_permissions(interaction: discord.Interaction):
     """Check if the bot has the necessary permissions."""
-    bot_member = ctx.guild.get_member(bot.user.id)
+    bot_member = interaction.guild.get_member(bot.user.id)
     permissions = bot_member.guild_permissions
     
     if permissions.manage_messages:
-        await ctx.send(" I have the 'Manage Messages' permission required to delete messages.")
+        response = "I have the 'Manage Messages' permission required to delete messages."
     else:
-        await ctx.send(" I don't have the 'Manage Messages' permission! Please update my role permissions.")
+        response = "I don't have the 'Manage Messages' permission! Please update my role permissions."
     
     # List channels where bot can't delete messages
     problem_channels = []
-    for channel in ctx.guild.text_channels:
+    for channel in interaction.guild.text_channels:
         perms = channel.permissions_for(bot_member)
         if not perms.manage_messages:
             problem_channels.append(channel.name)
     
     if problem_channels:
-        await ctx.send(f" I can't delete messages in these channels: {', '.join(problem_channels)}")
+        response += f"\nI can't delete messages in these channels: {', '.join(problem_channels)}"
+    
+    await interaction.response.send_message(response)
 
 # Keep the bot active (specific for Replit)
 keep_alive()
