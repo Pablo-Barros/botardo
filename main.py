@@ -3,7 +3,6 @@ import re
 import discord
 from discord import app_commands
 from discord.ext import commands
-from keep_alive import keep_alive  # To keep the bot active
 
 # Configure intents for the bot
 intents = discord.Intents.default()
@@ -192,8 +191,6 @@ async def check_permissions(interaction: discord.Interaction):
     
     await interaction.response.send_message(response)
 
-# Keep the bot active (specific for Replit)
-keep_alive()
-
 # Run the bot
-bot.run(os.environ['DISCORD_TOKEN'])
+if __name__ == "__main__":
+    bot.run(os.environ['DISCORD_TOKEN'])
