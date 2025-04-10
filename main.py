@@ -27,114 +27,11 @@ DEFAULT_CHANNEL_NAME = "〖🔫〗cs2"
 FACEIT_API_KEY = os.environ.get('FACEIT_API_KEY')
 FACEIT_API_URL = "https://open.faceit.com/data/v4"
 
-@bot.event
-async def on_ready():
-    """Event that executes when the bot is ready and connected."""
-    print(f'Bot conectado como {bot.user.name}')
-    print(f'ID del Bot: {bot.user.id}')
-    print('------')
-    
-    # Sync slash commands with Discord - Global sync first
-    try:
-        print("Intentando sincronización global de comandos...")
-        synced = await tree.sync()
-        print(f"¡Comandos slash sincronizados globalmente! Cantidad: {len(synced)}")
-        print(f"Comandos registrados: {', '.join([cmd.name for cmd in synced])}")
-    except Exception as e:
-        print(f"Error en sincronización global: {e}")
-    
-    # Then sync per guild for faster updates
-    print("Sincronizando comandos por servidor...")
-    for guild in bot.guilds:
-        try:
-            guild_commands = await tree.sync(guild=guild)
-            print(f"✓ Comandos sincronizados para {guild.name} (ID: {guild.id}). Cantidad: {len(guild_commands)}")
-            if guild_commands:
-                print(f"  Comandos: {', '.join([cmd.name for cmd in guild_commands])}")
-        except Exception as e:
-            print(f"✗ Error sincronizando comandos para {guild.name}: {e}")
-    
-    # Add a test command to verify slash commands are working
-    @tree.command(name='test', description='Comprobar si los comandos slash funcionan')
-    async def test_command(interaction: discord.Interaction):
-        """Comando simple para verificar que los comandos slash funcionan."""
-        await interaction.response.send_message("✅ Los comandos slash están funcionando correctamente.")
-    
-    # Try to sync again with the test command
-    try:
-        print("Sincronizando de nuevo con comando de prueba...")
-        for guild in bot.guilds:
-            await tree.sync(guild=guild)
-        print("Sincronización con comando de prueba completada.")
-    except Exception as e:
-        print(f"Error en segunda sincronización: {e}")
-    
-    # Print bot permissions information
-    for guild in bot.guilds:
-        print(f'Conectado al servidor: {guild.name} (id: {guild.id})')
-        
-        # Try to find the default channel if none is set for this guild
-        if guild.id not in target_channels:
-            default_channel = discord.utils.get(guild.channels, name=DEFAULT_CHANNEL_NAME)
-            if default_channel:
-                target_channels[guild.id] = default_channel.id
-                print(f'Canal objetivo predeterminado configurado "{DEFAULT_CHANNEL_NAME}" en {guild.name}')
-            else:
-                print(f'ADVERTENCIA: Canal predeterminado "{DEFAULT_CHANNEL_NAME}" no encontrado en {guild.name}')
-        else:
-            channel = guild.get_channel(target_channels[guild.id])
-            if channel:
-                print(f'Usando canal objetivo previamente configurado "{channel.name}" en {guild.name}')
-            else:
-                print(f'ADVERTENCIA: El canal objetivo configurado previamente ya no existe en {guild.name}')
-                # Remove invalid channel
-                target_channels.pop(guild.id, None)
-        
-        bot_member = guild.get_member(bot.user.id)
-        permissions = bot_member.guild_permissions
-        print(f'El bot tiene permiso "Gestionar Mensajes": {permissions.manage_messages}')
-        
-        # Check applications.commands scope
-        bot_user = await guild.fetch_member(bot.user.id)
-        if bot_user:
-            print(f'Permisos integración de aplicaciones en {guild.name}: {bot_user.guild_permissions.use_application_commands}')
-
-@bot.event
-async def on_message(message):
-    """Event that executes when a message is received."""
-    # Ignore messages from the bot itself to avoid loops
-    if message.author == bot.user:
-        return
-    
-    # Only check messages in the target channel for this guild
-    guild_id = message.guild.id
-    if guild_id not in target_channels or message.channel.id != target_channels[guild_id]:
-        return
-    
-    # Check if the message contains "connect" followed by an IP
-    match = IP_PATTERN.search(message.content)
-    if match:
-        # Log the action (for audit purposes)
-        found_ip = match.group(1)
-        print(f'Mensaje sensible detectado en canal #{message.channel.name} - Usuario: {message.author}, Contenido: {message.content}')
-        
-        try:
-            # Delete the message
-            await message.delete()
-            print(f'Mensaje con IP eliminado correctamente: {found_ip}')
-            
-            # Optional: Send a warning message to the user
-            await message.channel.send(
-                f"{message.author.mention} tu mensaje ha sido eliminado porque contenía información sensible.",
-                delete_after=10  # The message will be deleted after 10 seconds
-            )
-        except discord.errors.Forbidden as e:
-            print(f"ERROR: Sin permiso para eliminar mensajes en {message.channel} - {e}")
-            await message.channel.send(
-                f"Necesito el permiso 'Gestionar Mensajes' para eliminar mensajes que contengan connect+IP."
-            )
-        except Exception as e:
-            print(f"ERROR al eliminar mensaje: {e}")
+# Define all slash commands outside of on_ready
+@tree.command(name='test', description='Comprobar si los comandos slash funcionan')
+async def test_command(interaction: discord.Interaction):
+    """Comando simple para verificar que los comandos slash funcionan."""
+    await interaction.response.send_message("✅ Los comandos slash están funcionando correctamente.")
 
 @tree.command(name='ping', description='Comprobar si el bot está funcionando')
 async def ping(interaction: discord.Interaction):
@@ -154,6 +51,36 @@ async def info(interaction: discord.Interaction):
     await interaction.response.send_message(
         f"Soy un bot diseñado para eliminar mensajes que contienen instrucciones de conexión con direcciones IP en {channel_info}, para mantener la seguridad del servidor."
     )
+
+@tree.command(name='comandos', description='Mostrar todos los comandos disponibles')
+async def list_commands(interaction: discord.Interaction):
+    """Lista todos los comandos slash disponibles."""
+    cmd_list = []
+    for cmd in tree.get_commands():
+        cmd_list.append(f"/{cmd.name} - {cmd.description}")
+    
+    if cmd_list:
+        await interaction.response.send_message("**Comandos disponibles:**\n" + "\n".join(cmd_list))
+    else:
+        await interaction.response.send_message("❌ No hay comandos registrados actualmente.")
+
+@tree.command(name='sincronizar', description='Forzar la sincronización de comandos (solo administradores)')
+@app_commands.checks.has_permissions(administrator=True)
+async def force_sync(interaction: discord.Interaction):
+    """Fuerza la sincronización de los comandos slash con Discord."""
+    await interaction.response.defer(thinking=True)
+    
+    try:
+        # Sync to this guild
+        synced = await tree.sync(guild=interaction.guild)
+        cmd_names = [cmd.name for cmd in synced]
+        
+        await interaction.followup.send(
+            f"✅ Sincronización completada. {len(synced)} comandos sincronizados:\n" + 
+            ", ".join(cmd_names) if cmd_names else "No se encontraron comandos para sincronizar."
+        )
+    except Exception as e:
+        await interaction.followup.send(f"❌ Error durante la sincronización: {e}")
 
 @tree.command(name='canal', description='Establece qué canal monitorizar para mensajes con IP')
 @app_commands.describe(channel='El canal para monitorizar mensajes connect+IP')
@@ -368,6 +295,100 @@ async def check_permissions(interaction: discord.Interaction):
         response += f"\nNo puedo eliminar mensajes en estos canales: {', '.join(problem_channels)}"
     
     await interaction.response.send_message(response)
+
+@bot.event
+async def on_ready():
+    """Event that executes when the bot is ready and connected."""
+    print(f'Bot conectado como {bot.user.name}')
+    print(f'ID del Bot: {bot.user.id}')
+    print('------')
+    
+    # Sync slash commands with Discord - Global sync first
+    try:
+        print("Intentando sincronización global de comandos...")
+        synced = await tree.sync()
+        print(f"¡Comandos slash sincronizados globalmente! Cantidad: {len(synced)}")
+        print(f"Comandos registrados: {', '.join([cmd.name for cmd in synced])}")
+    except Exception as e:
+        print(f"Error en sincronización global: {e}")
+    
+    # Then sync per guild for faster updates
+    print("Sincronizando comandos por servidor...")
+    for guild in bot.guilds:
+        try:
+            guild_commands = await tree.sync(guild=guild)
+            print(f"✓ Comandos sincronizados para {guild.name} (ID: {guild.id}). Cantidad: {len(guild_commands)}")
+            if guild_commands:
+                print(f"  Comandos: {', '.join([cmd.name for cmd in guild_commands])}")
+        except Exception as e:
+            print(f"✗ Error sincronizando comandos para {guild.name}: {e}")
+    
+    # Print bot permissions information
+    for guild in bot.guilds:
+        print(f'Conectado al servidor: {guild.name} (id: {guild.id})')
+        
+        # Try to find the default channel if none is set for this guild
+        if guild.id not in target_channels:
+            default_channel = discord.utils.get(guild.channels, name=DEFAULT_CHANNEL_NAME)
+            if default_channel:
+                target_channels[guild.id] = default_channel.id
+                print(f'Canal objetivo predeterminado configurado "{DEFAULT_CHANNEL_NAME}" en {guild.name}')
+            else:
+                print(f'ADVERTENCIA: Canal predeterminado "{DEFAULT_CHANNEL_NAME}" no encontrado en {guild.name}')
+        else:
+            channel = guild.get_channel(target_channels[guild.id])
+            if channel:
+                print(f'Usando canal objetivo previamente configurado "{channel.name}" en {guild.name}')
+            else:
+                print(f'ADVERTENCIA: El canal objetivo configurado previamente ya no existe en {guild.name}')
+                # Remove invalid channel
+                target_channels.pop(guild.id, None)
+        
+        bot_member = guild.get_member(bot.user.id)
+        permissions = bot_member.guild_permissions
+        print(f'El bot tiene permiso "Gestionar Mensajes": {permissions.manage_messages}')
+        
+        # Check applications.commands scope
+        bot_user = await guild.fetch_member(bot.user.id)
+        if bot_user:
+            print(f'Permisos integración de aplicaciones en {guild.name}: {bot_user.guild_permissions.use_application_commands}')
+
+@bot.event
+async def on_message(message):
+    """Event that executes when a message is received."""
+    # Ignore messages from the bot itself to avoid loops
+    if message.author == bot.user:
+        return
+    
+    # Only check messages in the target channel for this guild
+    guild_id = message.guild.id
+    if guild_id not in target_channels or message.channel.id != target_channels[guild_id]:
+        return
+    
+    # Check if the message contains "connect" followed by an IP
+    match = IP_PATTERN.search(message.content)
+    if match:
+        # Log the action (for audit purposes)
+        found_ip = match.group(1)
+        print(f'Mensaje sensible detectado en canal #{message.channel.name} - Usuario: {message.author}, Contenido: {message.content}')
+        
+        try:
+            # Delete the message
+            await message.delete()
+            print(f'Mensaje con IP eliminado correctamente: {found_ip}')
+            
+            # Optional: Send a warning message to the user
+            await message.channel.send(
+                f"{message.author.mention} tu mensaje ha sido eliminado porque contenía información sensible.",
+                delete_after=10  # The message will be deleted after 10 seconds
+            )
+        except discord.errors.Forbidden as e:
+            print(f"ERROR: Sin permiso para eliminar mensajes en {message.channel} - {e}")
+            await message.channel.send(
+                f"Necesito el permiso 'Gestionar Mensajes' para eliminar mensajes que contengan connect+IP."
+            )
+        except Exception as e:
+            print(f"ERROR al eliminar mensaje: {e}")
 
 # Run the bot
 if __name__ == "__main__":
