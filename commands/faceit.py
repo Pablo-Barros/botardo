@@ -104,22 +104,47 @@ def setup(bot, tree):
             losses = 0
             
             if recent_matches:
+                # Imprimir información de depuración de la primera partida para análisis
+                print(f"DEBUG - Estructura de datos de la primera partida:")
+                if recent_matches and len(recent_matches) > 0:
+                    first_match = recent_matches[0]
+                    print(f"Llaves principales: {list(first_match.keys())}")
+                    
                 for match in recent_matches:
-                    match_teams = match.get('teams', {})
-                    match_result = "No disponible"
+                    # Determinar el resultado de la partida para el jugador
+                    match_id = match.get('match_id')
                     
-                    # Encontrar el resultado de la partida para el jugador
-                    for team_key, team_data in match_teams.items():
-                        for player in team_data.get('players', []):
-                            if player.get('player_id') == player_id:
-                                match_result = team_data.get('outcome', 'No disponible')
+                    # Obtener los detalles de la partida individual
+                    match_details_url = f"{FACEIT_API_URL}/matches/{match_id}"
+                    match_details_response = requests.get(match_details_url, headers=headers)
                     
-                    if match_result == 'win':
-                        wins += 1
-                    elif match_result == 'loss':
-                        losses += 1
+                    if match_details_response.status_code == 200:
+                        match_details = match_details_response.json()
+                        
+                        # Determinar a qué equipo pertenece el jugador y si ganó
+                        faction1_roster = match_details.get('teams', {}).get('faction1', {}).get('roster', [])
+                        faction2_roster = match_details.get('teams', {}).get('faction2', {}).get('roster', [])
+                        
+                        player_team = None
+                        for player_info in faction1_roster:
+                            if player_info.get('player_id') == player_id:
+                                player_team = 'faction1'
+                                break
+                        
+                        if player_team is None:
+                            for player_info in faction2_roster:
+                                if player_info.get('player_id') == player_id:
+                                    player_team = 'faction2'
+                                    break
+                        
+                        if player_team:
+                            winner = match_details.get('results', {}).get('winner')
+                            if winner == player_team:
+                                wins += 1
+                            elif winner:  # Si hay un ganador pero no es el equipo del jugador
+                                losses += 1
                 
-                # Añadir estadísticas de partidas recientes
+                # Calcular porcentaje de victoria
                 recent_win_rate = 0
                 if wins + losses > 0:
                     recent_win_rate = (wins / (wins + losses)) * 100
