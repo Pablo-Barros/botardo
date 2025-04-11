@@ -10,9 +10,24 @@ async def on_ready(bot, tree):
     print(f'ID del Bot: {bot.user.id}')
     print('------')
     
+    # DIAGNÓSTICO: Listar comandos actuales antes de la sincronización
+    print("\n🔍 DIAGNÓSTICO DE COMANDOS:")
+    print("Comandos registrados ANTES de sincronizar:")
+    global_commands = await bot.application.commands.fetch()
+    for cmd in global_commands:
+        print(f"  - /{cmd.name} (global)")
+    
+    for guild in bot.guilds:
+        try:
+            guild_commands = await guild.fetch_application_commands()
+            for cmd in guild_commands:
+                print(f"  - /{cmd.name} (en {guild.name})")
+        except Exception as e:
+            print(f"  Error al obtener comandos en {guild.name}: {e}")
+    
     # ESTRATEGIA DE SINCRONIZACIÓN MEJORADA
     # 1. Primero sincronizamos por servidores (más rápido y con menos límites de tasa)
-    print("Sincronizando comandos por servidor (para actualizaciones rápidas)...")
+    print("\nSincronizando comandos por servidor (para actualizaciones rápidas)...")
     for guild in bot.guilds:
         try:
             # Borrar comandos existentes en el servidor antes de sincronizar
@@ -42,6 +57,20 @@ async def on_ready(bot, tree):
             print(f"Comandos registrados: {', '.join([cmd.name for cmd in synced])}")
     except Exception as e:
         print(f"Error en sincronización global: {e}")
+    
+    # DIAGNÓSTICO: Verificar comandos después de la sincronización
+    print("\n🔍 Comandos registrados DESPUÉS de sincronizar:")
+    global_commands = await bot.application.commands.fetch()
+    for cmd in global_commands:
+        print(f"  - /{cmd.name} (global)")
+    
+    for guild in bot.guilds:
+        try:
+            guild_commands = await guild.fetch_application_commands()
+            for cmd in guild_commands:
+                print(f"  - /{cmd.name} (en {guild.name})")
+        except Exception as e:
+            print(f"  Error al obtener comandos en {guild.name}: {e}")
     
     # Información sobre permisos del bot
     for guild in bot.guilds:
