@@ -15,12 +15,8 @@ async def on_ready(bot, tree):
     print("\nSincronizando comandos por servidor (para actualizaciones rápidas)...")
     for guild in bot.guilds:
         try:
-            # Borrar comandos existentes en el servidor antes de sincronizar
-            # Esto asegura que se eliminan comandos obsoletos
-            tree.clear_commands(guild=guild)
-            await tree.sync(guild=guild)
-            
-            # Volver a sincronizar con los comandos actualizados
+            # NO borrar comandos existentes - esto estaba causando el problema
+            # Sincronizar los comandos actuales
             guild_commands = await tree.sync(guild=guild)
             print(f"✓ Comandos sincronizados para {guild.name} (ID: {guild.id}). Cantidad: {len(guild_commands)}")
             if guild_commands:
@@ -31,10 +27,7 @@ async def on_ready(bot, tree):
     # 2. Luego sincronizamos globalmente para servidores futuros
     try:
         print("\nRealizando sincronización global de comandos...")
-        # Limpiar comandos globales existentes
-        tree.clear_commands(guild=None)
-        await tree.sync()
-        
+        # NO borrar comandos globales - esto estaba causando el problema
         # Sincronizar con comandos actualizados
         synced = await tree.sync()
         print(f"¡Comandos slash sincronizados globalmente! Cantidad: {len(synced)}")
