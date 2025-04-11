@@ -10,23 +10,6 @@ async def on_ready(bot, tree):
     print(f'ID del Bot: {bot.user.id}')
     print('------')
     
-    # DIAGNÓSTICO: Listar comandos actuales antes de la sincronización
-    print("\n🔍 DIAGNÓSTICO DE COMANDOS:")
-    print("Comandos registrados ANTES de sincronizar:")
-    
-    # Usamos el método correcto para obtener los comandos
-    for guild in bot.guilds:
-        try:
-            # Obtener comandos específicos del servidor
-            guild_cmds = await guild.fetch_application_commands(application=bot.user)
-            if guild_cmds:
-                for cmd in guild_cmds:
-                    print(f"  - /{cmd.name} (en {guild.name})")
-            else:
-                print(f"  No hay comandos específicos en {guild.name}")
-        except Exception as e:
-            print(f"  Error al obtener comandos en {guild.name}: {e}")
-    
     # ESTRATEGIA DE SINCRONIZACIÓN MEJORADA
     # 1. Primero sincronizamos por servidores (más rápido y con menos límites de tasa)
     print("\nSincronizando comandos por servidor (para actualizaciones rápidas)...")
@@ -59,22 +42,6 @@ async def on_ready(bot, tree):
             print(f"Comandos registrados: {', '.join([cmd.name for cmd in synced])}")
     except Exception as e:
         print(f"Error en sincronización global: {e}")
-    
-    # DIAGNÓSTICO: Verificar comandos después de la sincronización
-    print("\n🔍 Comandos registrados DESPUÉS de sincronizar:")
-    
-    # Usamos el método correcto para listar los comandos después de sincronizar
-    for guild in bot.guilds:
-        try:
-            # Obtener comandos específicos del servidor
-            guild_cmds = await guild.fetch_application_commands(application=bot.user)
-            if guild_cmds:
-                for cmd in guild_cmds:
-                    print(f"  - /{cmd.name} (en {guild.name})")
-            else:
-                print(f"  No hay comandos específicos en {guild.name}")
-        except Exception as e:
-            print(f"  Error al obtener comandos en {guild.name}: {e}")
     
     # Información sobre permisos del bot
     for guild in bot.guilds:
