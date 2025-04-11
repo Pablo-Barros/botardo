@@ -6,8 +6,20 @@ from discord import app_commands
 from config import target_channels
 from utils.helpers import get_target_channel_info
 
+# Variable global para almacenar las referencias
+_bot = None
+_tree = None
+
 def setup(bot, tree):
     """Configura los comandos generales."""
+    global _bot, _tree
+    _bot = bot
+    _tree = tree
+    
+    register_commands(tree)
+
+def register_commands(tree):
+    """Registra todos los comandos generales en el árbol."""
     
     @tree.command(name='test', description='Comprobar si los comandos slash funcionan')
     async def test_command(interaction: discord.Interaction):

@@ -5,8 +5,20 @@ import discord
 from discord import app_commands
 from config import target_channels
 
+# Variable global para almacenar las referencias
+_bot = None
+_tree = None
+
 def setup(bot, tree):
     """Configura los comandos administrativos."""
+    global _bot, _tree
+    _bot = bot
+    _tree = tree
+    
+    register_commands(tree)
+
+def register_commands(tree):
+    """Registra todos los comandos administrativos en el árbol."""
     
     @tree.command(name='sincronizar', description='Forzar la sincronización de comandos (solo administradores)')
     @app_commands.checks.has_permissions(administrator=True)
@@ -37,7 +49,7 @@ def setup(bot, tree):
         target_channels[guild_id] = channel.id
         
         # Verificar si el bot tiene permisos para eliminar mensajes en este canal
-        bot_member = interaction.guild.get_member(bot.user.id)
+        bot_member = interaction.guild.get_member(_bot.user.id)
         channel_perms = channel.permissions_for(bot_member)
         
         if channel_perms.manage_messages:
@@ -67,7 +79,7 @@ def setup(bot, tree):
     async def check_permissions(interaction: discord.Interaction):
         """Verifica si el bot tiene los permisos necesarios."""
         guild_id = interaction.guild.id
-        bot_member = interaction.guild.get_member(bot.user.id)
+        bot_member = interaction.guild.get_member(_bot.user.id)
         permissions = bot_member.guild_permissions
         
         # Verificar si existe el canal objetivo

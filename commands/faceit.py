@@ -8,8 +8,20 @@ from datetime import datetime
 from config import FACEIT_API_KEY, FACEIT_API_URL
 from utils.helpers import format_timestamp
 
+# Variable global para almacenar las referencias
+_bot = None
+_tree = None
+
 def setup(bot, tree):
     """Configura los comandos de FACEIT."""
+    global _bot, _tree
+    _bot = bot
+    _tree = tree
+    
+    register_commands(tree)
+
+def register_commands(tree):
+    """Registra todos los comandos FACEIT en el árbol."""
     
     @tree.command(name='elo', description='Buscar el ELO de FACEIT de un jugador')
     @app_commands.describe(nickname='Nickname de FACEIT del jugador')
@@ -73,14 +85,6 @@ def setup(bot, tree):
             print(f"ERROR consultando FACEIT API: {e}")
             await interaction.followup.send(f"❌ Ocurrió un error al procesar la solicitud: {str(e)}")
 
-    @faceit_elo.error
-    async def faceit_elo_error(interaction: discord.Interaction, error):
-        """Maneja errores para el comando faceit_elo."""
-        await interaction.response.send_message(
-            f"❌ Error al buscar el ELO de FACEIT: {str(error)}",
-            ephemeral=True
-        )
-    
     @tree.command(name='stats', description='Buscar estadísticas generales de un jugador en FACEIT')
     @app_commands.describe(nickname='Nickname de FACEIT del jugador')
     async def faceit_stats(interaction: discord.Interaction, nickname: str):
@@ -171,14 +175,6 @@ def setup(bot, tree):
             print(f"ERROR consultando FACEIT API: {e}")
             await interaction.followup.send(f"❌ Ocurrió un error al procesar la solicitud: {str(e)}")
 
-    @faceit_stats.error
-    async def faceit_stats_error(interaction: discord.Interaction, error):
-        """Maneja errores para el comando faceit_stats."""
-        await interaction.response.send_message(
-            f"❌ Error al buscar estadísticas de FACEIT: {str(error)}",
-            ephemeral=True
-        )
-    
     @tree.command(name='recientes', description='Ver estadísticas de las últimas 20 partidas en FACEIT')
     @app_commands.describe(nickname='Nickname de FACEIT del jugador')
     async def faceit_recent(interaction: discord.Interaction, nickname: str):
@@ -319,7 +315,24 @@ def setup(bot, tree):
         except Exception as e:
             print(f"ERROR consultando FACEIT API: {e}")
             await interaction.followup.send(f"❌ Ocurrió un error al procesar la solicitud: {str(e)}")
-
+            
+    # Añadir los manejadores de errores para los comandos
+    @faceit_elo.error
+    async def faceit_elo_error(interaction: discord.Interaction, error):
+        """Maneja errores para el comando faceit_elo."""
+        await interaction.response.send_message(
+            f"❌ Error al buscar el ELO de FACEIT: {str(error)}",
+            ephemeral=True
+        )
+        
+    @faceit_stats.error
+    async def faceit_stats_error(interaction: discord.Interaction, error):
+        """Maneja errores para el comando faceit_stats."""
+        await interaction.response.send_message(
+            f"❌ Error al buscar estadísticas de FACEIT: {str(error)}",
+            ephemeral=True
+        )
+        
     @faceit_recent.error
     async def faceit_recent_error(interaction: discord.Interaction, error):
         """Maneja errores para el comando faceit_recent."""
