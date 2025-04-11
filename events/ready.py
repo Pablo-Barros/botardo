@@ -13,15 +13,17 @@ async def on_ready(bot, tree):
     # DIAGNÓSTICO: Listar comandos actuales antes de la sincronización
     print("\n🔍 DIAGNÓSTICO DE COMANDOS:")
     print("Comandos registrados ANTES de sincronizar:")
-    global_commands = await bot.application.commands.fetch()
-    for cmd in global_commands:
-        print(f"  - /{cmd.name} (global)")
     
+    # Usamos el método correcto para obtener los comandos
     for guild in bot.guilds:
         try:
-            guild_commands = await guild.fetch_application_commands()
-            for cmd in guild_commands:
-                print(f"  - /{cmd.name} (en {guild.name})")
+            # Obtener comandos específicos del servidor
+            guild_cmds = await guild.fetch_application_commands(application=bot.user)
+            if guild_cmds:
+                for cmd in guild_cmds:
+                    print(f"  - /{cmd.name} (en {guild.name})")
+            else:
+                print(f"  No hay comandos específicos en {guild.name}")
         except Exception as e:
             print(f"  Error al obtener comandos en {guild.name}: {e}")
     
@@ -60,15 +62,17 @@ async def on_ready(bot, tree):
     
     # DIAGNÓSTICO: Verificar comandos después de la sincronización
     print("\n🔍 Comandos registrados DESPUÉS de sincronizar:")
-    global_commands = await bot.application.commands.fetch()
-    for cmd in global_commands:
-        print(f"  - /{cmd.name} (global)")
     
+    # Usamos el método correcto para listar los comandos después de sincronizar
     for guild in bot.guilds:
         try:
-            guild_commands = await guild.fetch_application_commands()
-            for cmd in guild_commands:
-                print(f"  - /{cmd.name} (en {guild.name})")
+            # Obtener comandos específicos del servidor
+            guild_cmds = await guild.fetch_application_commands(application=bot.user)
+            if guild_cmds:
+                for cmd in guild_cmds:
+                    print(f"  - /{cmd.name} (en {guild.name})")
+            else:
+                print(f"  No hay comandos específicos en {guild.name}")
         except Exception as e:
             print(f"  Error al obtener comandos en {guild.name}: {e}")
     
