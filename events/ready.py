@@ -10,25 +10,38 @@ async def on_ready(bot, tree):
     print(f'ID del Bot: {bot.user.id}')
     print('------')
     
-    # Sincronizar comandos slash con Discord - Primero global
-    try:
-        print("Intentando sincronización global de comandos...")
-        synced = await tree.sync()
-        print(f"¡Comandos slash sincronizados globalmente! Cantidad: {len(synced)}")
-        print(f"Comandos registrados: {', '.join([cmd.name for cmd in synced])}")
-    except Exception as e:
-        print(f"Error en sincronización global: {e}")
-    
-    # Luego sincronizar por servidor para actualizaciones más rápidas
-    print("Sincronizando comandos por servidor...")
+    # ESTRATEGIA DE SINCRONIZACIÓN MEJORADA
+    # 1. Primero sincronizamos por servidores (más rápido y con menos límites de tasa)
+    print("Sincronizando comandos por servidor (para actualizaciones rápidas)...")
     for guild in bot.guilds:
         try:
+            # Borrar comandos existentes en el servidor antes de sincronizar
+            # Esto asegura que se eliminan comandos obsoletos
+            tree.clear_commands(guild=guild)
+            await tree.sync(guild=guild)
+            
+            # Volver a sincronizar con los comandos actualizados
             guild_commands = await tree.sync(guild=guild)
             print(f"✓ Comandos sincronizados para {guild.name} (ID: {guild.id}). Cantidad: {len(guild_commands)}")
             if guild_commands:
                 print(f"  Comandos: {', '.join([cmd.name for cmd in guild_commands])}")
         except Exception as e:
             print(f"✗ Error sincronizando comandos para {guild.name}: {e}")
+    
+    # 2. Luego sincronizamos globalmente para servidores futuros
+    try:
+        print("\nRealizando sincronización global de comandos...")
+        # Limpiar comandos globales existentes
+        tree.clear_commands(guild=None)
+        await tree.sync()
+        
+        # Sincronizar con comandos actualizados
+        synced = await tree.sync()
+        print(f"¡Comandos slash sincronizados globalmente! Cantidad: {len(synced)}")
+        if synced:
+            print(f"Comandos registrados: {', '.join([cmd.name for cmd in synced])}")
+    except Exception as e:
+        print(f"Error en sincronización global: {e}")
     
     # Información sobre permisos del bot
     for guild in bot.guilds:
