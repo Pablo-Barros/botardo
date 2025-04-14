@@ -1,68 +1,121 @@
-# Discord Connect-IP Bot
+# Botardo - Bot de Discord Multipropósito
 
-Un bot de Discord diseñado para detectar y eliminar automáticamente mensajes que contengan la palabra "connect" seguida de una dirección IP, ayudando a mantener la seguridad en servidores de Discord.
+Un bot de Discord modular diseñado para múltiples funcionalidades:
+1. Monitorizar y eliminar mensajes con direcciones IP
+2. Consultar estadísticas de jugadores en FACEIT
 
 ## Características
 
-- Detecta mensajes que contienen la palabra "connect" seguida de una dirección IP
-- Elimina automáticamente estos mensajes
-- Envía una notificación temporal al usuario informándole que su mensaje ha sido eliminado
-- Incluye comandos básicos para verificar el funcionamiento del bot
+### Seguridad
+- Detecta y elimina mensajes que contienen "connect" seguido de una dirección IP
+- Monitorea tanto mensajes nuevos como mensajes editados
+- Configurable para vigilar canales específicos en cada servidor
+- Notifica al usuario cuando sus mensajes son eliminados
 
-## Despliegue en Replit
+### Integración con FACEIT
+- Comando `/elo`: Muestra el ELO y nivel de un jugador en FACEIT
+- Comando `/stats`: Muestra estadísticas completas de un jugador
+- Comando `/recientes`: Muestra el rendimiento en las últimas 20 partidas
 
-Este proyecto está configurado para ser desplegado fácilmente en Replit, que ofrece alojamiento gratuito para bots de Discord.
+### Administración
+- Comando `/canal`: Permite configurar qué canal monitorizar para IPs
+- Comando `/checkperms`: Verifica si el bot tiene los permisos necesarios
+- Comando `/sincronizar`: Sincroniza manualmente los comandos con Discord
+- Comando `/comandos`: Muestra todos los comandos disponibles
 
-### Configuración en Replit
+## Arquitectura
 
-1. Crea una cuenta en [Replit](https://replit.com) si no tienes una
-2. Haz clic en el botón "+" para crear un nuevo Repl
-3. Selecciona "Importar desde GitHub" y utiliza la URL de este repositorio
-4. Una vez importado, agrega tu token de bot de Discord como secreto:
-   - Haz clic en "Secretos" en el panel de herramientas
-   - Agrega un nuevo secreto con la clave `DISCORD_TOKEN` y tu token de Discord como valor
-5. Haz clic en el botón "Run" para iniciar tu bot
+El código está organizado en una estructura modular para facilitar el mantenimiento:
 
-El bot incluye un mecanismo de keep-alive para permanecer en línea en la versión gratuita de Replit.
+```
+/botardo/
+├── main.py              # Punto de entrada principal
+├── config.py            # Configuraciones y variables globales
+├── commands/            # Comandos del bot
+│   ├── general.py       # Comandos básicos (ping, info, etc.)
+│   ├── admin.py         # Comandos administrativos
+│   └── faceit.py        # Comandos para integración con FACEIT
+├── events/              # Manejadores de eventos
+│   ├── ready.py         # Evento on_ready
+│   └── messages.py      # Eventos relacionados con mensajes
+└── utils/               # Utilidades
+    └── helpers.py       # Funciones auxiliares
+```
 
 ## Requisitos
 
 - Python 3.8 o superior
 - Token de bot de Discord
-- Permisos de gestión de mensajes en el servidor
+- API Key de FACEIT (opcional, solo para comandos de FACEIT)
+- Permisos de Discord adecuados
 
-## Instalación local (alternativa)
+## Variables de Entorno
 
-1. Clona este repositorio o descarga los archivos
+Crear un archivo `.env` basado en `.env.example` con:
 
-2. Instala las dependencias necesarias:
+```
+DISCORD_TOKEN=tu-token-aquí
+FACEIT_API_KEY=tu-api-key-aquí (opcional)
+```
+
+## Instalación Local
+
+1. Clona este repositorio
+2. Instala las dependencias:
    ```
    pip install -r requirements.txt
    ```
-
-3. Establece tu token de Discord como variable de entorno:
+3. Configura las variables de entorno
+4. Ejecuta el bot:
    ```
-   export DISCORD_TOKEN=tu-token-aquí
+   python main.py
    ```
 
-## Cómo obtener un token de Discord
+## Despliegue en Railway
 
-1. Ve al [Portal de desarrolladores de Discord](https://discord.com/developers/applications)
-2. Crea una nueva aplicación
-3. Ve a la sección "Bot" y crea un nuevo bot
-4. Copia el token y establécelo como variable de entorno o en secretos de Replit
-5. En la sección "OAuth2" > "Generador de URL", selecciona el alcance "bot" y los permisos "Gestionar mensajes" y "Leer historial de mensajes"
-6. Utiliza la URL generada para invitar al bot a tu servidor
+Este proyecto está configurado para ser desplegado en Railway:
 
-## Permisos necesarios
+1. Crea una cuenta en [Railway](https://railway.app)
+2. Crea un nuevo proyecto y conecta tu repositorio de GitHub
+3. Configura las variables de entorno (`DISCORD_TOKEN` y opcionalmente `FACEIT_API_KEY`)
+4. Railway detectará automáticamente el archivo `requirements.txt` e instalará las dependencias
+5. Despliega el proyecto, Railway ejecutará automáticamente `python main.py`
 
-Para que el bot funcione correctamente, necesita los siguientes permisos:
-- Leer mensajes
-- Leer historial de mensajes
-- Gestionar mensajes (para eliminar mensajes)
-- Enviar mensajes (para notificaciones)
+## Invitación del Bot
 
-## Comandos disponibles
+Para que el bot funcione correctamente con comandos slash, asegúrate de invitarlo con los scopes correctos:
 
-- `!ping`: Verifica si el bot está activo
-- `!info`: Muestra información sobre el propósito del bot
+```
+https://discord.com/oauth2/authorize?client_id=TU_CLIENT_ID&permissions=275414829120&scope=bot%20applications.commands
+```
+
+Es **CRÍTICO** incluir el scope `applications.commands` para que los comandos slash funcionen.
+
+## Permisos Necesarios
+
+Para funcionar correctamente, el bot necesita estos permisos:
+- Ver canales
+- Enviar mensajes
+- Gestionar mensajes (para eliminar mensajes con IPs)
+- Usar comandos de aplicación (para comandos slash)
+
+## Comandos Disponibles
+
+### Generales
+- `/ping`: Verifica si el bot está funcionando
+- `/info`: Muestra información sobre el propósito del bot
+- `/comandos`: Lista todos los comandos disponibles
+
+### Administración
+- `/canal [#channel]`: Configura qué canal monitorizar para mensajes con IPs
+- `/checkperms`: Verifica si el bot tiene los permisos necesarios
+- `/sincronizar`: Sincroniza los comandos slash (solo administradores)
+
+### FACEIT
+- `/elo [nickname]`: Muestra el ELO y nivel de un jugador
+- `/stats [nickname]`: Muestra estadísticas completas del jugador
+- `/recientes [nickname]`: Muestra las estadísticas de las últimas 20 partidas
+
+## Contribuir
+
+Las contribuciones son bienvenidas. Por favor, mantén la estructura modular del código al añadir nuevas características.
