@@ -37,6 +37,12 @@ async def on_message(message):
     """Evento que se ejecuta cuando se recibe un mensaje."""
     await messages.on_message(bot, message)
 
+# Configurar el evento on_message_edit
+@bot.event
+async def on_message_edit(before, after):
+    """Evento que se ejecuta cuando se edita un mensaje."""
+    await messages.on_message_edit(bot, before, after)
+
 # Cargar todos los módulos de comandos
 def setup_command_modules():
     """Inicializa y configura todos los módulos de comandos."""
