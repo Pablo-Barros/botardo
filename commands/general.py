@@ -52,3 +52,15 @@ def register_commands(tree):
             await interaction.response.send_message("**Comandos disponibles:**\n" + "\n".join(cmd_list))
         else:
             await interaction.response.send_message("❌ No hay comandos registrados actualmente.")
+    
+    @tree.command(name='cito', description='Frase de cito')
+    async def cito(interaction: discord.Interaction):
+        await interaction.response.send_message("Abuuur una de dry neno!!")
+    
+    @tree.command(name='weed', description='Frase de weed')
+    async def weed(interaction: discord.Interaction):
+        await interaction.response.send_message("sois unos trolls neno\n*Procede a comprarse una scout*")
+    
+    @tree.command(name='nipple', description='Frase de nipple')
+    async def nipple(interaction: discord.Interaction):
+        await interaction.response.send_message("Ya resetee el mental.")
