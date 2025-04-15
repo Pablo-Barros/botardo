@@ -8,8 +8,8 @@ import re
 # Canal predeterminado para monitorear mensajes
 DEFAULT_CHANNEL_NAME = "〖🔫〗cs2"
 
-# Expresión regular para detectar "connect" seguido de una dirección IP
-IP_PATTERN = re.compile(r'connect\s+(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', re.IGNORECASE)
+# Detectar cualquier IPv4 en el mensaje
+IP_PATTERN = re.compile(r'((?:\d{1,3}\.){3}\d{1,3})')
 
 # Tokens y claves de API
 DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
